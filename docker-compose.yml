@@ -1,7 +1,7 @@
 version: '3'
 services:
   kafka_jar:
-    image: runjava
+    image: openjdk:8
     build:
      context: .
     volumes:
@@ -17,7 +17,7 @@ services:
      - kafka
 
   db_jar:
-    image: runjava
+    image: openjdk:8
     volumes:
      - ${PWD}/etc/:/etc/jaggia/
     environment:
@@ -31,7 +31,7 @@ services:
      - kafka
 
   snapshot_jar:
-   image: runjava
+   image: openjdk:8
    volumes:
     - ${PWD}/etc/:/etc/jaggia/
    environment:
@@ -49,17 +49,23 @@ services:
     volumes:
      - influxdb-storage:/var/lib/influxdb
 
+  zookeeper:
+    container_name: zookeeper
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - 2181:2181
+
   kafka:
-    image: kafka:0.10.2.1
-    build:
-     context: kafka/kafka
-     args:
-       KAFKA_VERSION: 0.10.2.1
+    image: wurstmeister/kafka:2.12-2.5.0
+    depends_on:
+      - zookeeper
     container_name: kafka
     #volumes:
     # - ${PWD}/etc/server.properties:/opt/kafka/conf/server.properties
-    #environment:
-    # - KAFKA_VERSION=0.11.0.1
+    environment:
+    # - KAFKA_VERSION=2.12-2.5.0
+      - KAFKA_ADVERTISED_HOST_NAME=localhost
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
 
   grafana:
     container_name: grafana

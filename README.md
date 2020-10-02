@@ -16,7 +16,7 @@ cd into the metricsAggregationPlatform directory and run the following commands 
 docker containers in this order.
 
 ```
-docker-compose up -d logstash kafka grafana kibana
+docker-compose up -d logstash kafka grafana kibana zookeeper
 docker-compose up --scale kafka_jar=4
 
 ```
