@@ -27,6 +27,7 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);
+        // TODO: Fix aggregate function.
     }
 
     /**
@@ -54,6 +55,7 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);
+        // TODO: Fix aggregate function.
     }
 
     /**

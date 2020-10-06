@@ -6,7 +6,7 @@ RUN ["gradle", "kafkaJar", "dbJar"]
 
 FROM openjdk:9
 #FROM openjdk:9-jre-slim
-MAINTAINER Anadi Jaggia
+LABEL maintainer="Anadi Jaggia, Joshua Zenn"
 
 COPY --from=builder /project/build/libs/kafkaJar.jar /home/kafkaJar.jar
 COPY --from=builder /project/build/libs/dbJar.jar /home/dbJar.jar
