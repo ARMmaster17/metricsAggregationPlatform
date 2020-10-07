@@ -59,9 +59,11 @@ services:
     image: wurstmeister/kafka:2.12-2.5.0
     depends_on:
       - zookeeper
+    ports:
+      - 9092:9092
     container_name: kafka
-    #volumes:
-    # - ${PWD}/etc/server.properties:/opt/kafka/conf/server.properties
+    volumes:
+     - ${PWD}/etc/server.properties:/opt/kafka/conf/server.properties
     environment:
     # - KAFKA_VERSION=2.12-2.5.0
       - KAFKA_ADVERTISED_HOST_NAME=localhost

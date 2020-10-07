@@ -2,8 +2,12 @@ package metricsAggregationPlatform;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.kafka.common.metrics.stats.Count;
+import org.apache.kafka.common.metrics.stats.WindowedCount;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.kstream.*;
+
+import java.time.Duration;
 
 class Aggregator {
 
@@ -21,12 +25,26 @@ class Aggregator {
         KGroupedStream<String, String> kGroupedStreamCount
                 = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
         //END COUNT OPERATIONS
-        return kGroupedStreamCount.aggregate(
+        /*return kGroupedStreamCount.aggregate(
                 () -> 0L,
                 (aggKey, newValue, aggValue) -> aggValue + 1,
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
-                AGG_NAME);
+                AGG_NAME);*/
+        return kGroupedStreamCount.windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
+                new Initializer<Long>() {
+                    @Override
+                    public Long apply() {
+                        return 0L;
+                    }
+                },
+                new org.apache.kafka.streams.kstream.Aggregator<String, String, Long>() {
+                    @Override
+                    public Long apply(String key, String value, Long aggregate) {
+                        return aggregate++;
+                    }
+                }
+        );
         // TODO: Fix aggregate function.
     }
 
@@ -46,7 +64,7 @@ class Aggregator {
         KGroupedStream<String, String> kGroupedStreamSum
                 = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
         //END SUM OPERATIONS
-        return kGroupedStreamSum.aggregate(
+        /*return kGroupedStreamSum.aggregate(
                 () -> 0L,
                 (aggKey, newValue, aggValue) -> {
                     JsonObject jsonObject = new JsonParser().parse(newValue).getAsJsonObject();
@@ -54,8 +72,22 @@ class Aggregator {
                 },
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
-                AGG_NAME);
-        // TODO: Fix aggregate function.
+                AGG_NAME);*/
+        return kGroupedStreamSum.windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
+                new Initializer<Long>() {
+                      @Override
+                      public Long apply() {
+                          return 0L;
+                      }
+                  },
+                new org.apache.kafka.streams.kstream.Aggregator<String, String, Long>() {
+                    @Override
+                    public Long apply(String key, String value, Long aggregate) {
+                        JsonObject jsonObject = new JsonParser().parse(value).getAsJsonObject();
+                        return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
+                    }
+                }/*,
+                Serdes.Long()*/);
     }
 
     /**
