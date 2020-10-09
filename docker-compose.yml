@@ -51,23 +51,29 @@ services:
 
   zookeeper:
     container_name: zookeeper
-    image: wurstmeister/zookeeper:latest
+    image: confluentinc/cp-zookeeper:latest
     ports:
       - 2181:2181
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
 
   kafka:
-    image: wurstmeister/kafka:2.12-2.5.0
+    image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
     ports:
       - 9092:9092
     container_name: kafka
     volumes:
-     - ${PWD}/etc/server.properties:/opt/kafka/conf/server.properties
+     - ${PWD}/etc/server.properties:/etc/kafka/server.properties
     environment:
-    # - KAFKA_VERSION=2.12-2.5.0
-      - KAFKA_ADVERTISED_HOST_NAME=localhost
+      - KAFKA_VERSION=2.6.0
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CREATE_TOPICS=logstash:1:16,phn_to_cachegroup:1:16,cachegroup_to_cdn:1:16,count_pssc:1:16,sum_b:1:16
 
   grafana:
     container_name: grafana

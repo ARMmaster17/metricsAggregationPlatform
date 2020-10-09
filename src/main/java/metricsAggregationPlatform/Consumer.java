@@ -108,6 +108,7 @@ class Consumer {
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, TimeStampExtractor.class);
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, System.getenv("NUM_THREADS"));
+        props.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
 
