@@ -1,8 +1,8 @@
 kafka:
   input:
     bootstrap_servers: kafka:9092
-    input_topic: logstash
-    app_id: snafu
+    input_topic: logstashTopic
+    app_id: snafu2
   output:
     output_topic: output
 

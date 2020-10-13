@@ -74,6 +74,7 @@ services:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_CREATE_TOPICS=logstash:1:16,phn_to_cachegroup:1:16,cachegroup_to_cdn:1:16,count_pssc:1:16,sum_b:1:16
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
 
   grafana:
     container_name: grafana
@@ -86,7 +87,7 @@ services:
      - grafana-storage:/var/lib/grafana
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:5.5.2
+    image: logstash:7.9.2
     container_name: logstash
     volumes:
      - ${PWD}/conf.d/:/usr/share/logstash/pipeline/
@@ -96,11 +97,12 @@ services:
      - kafka
 
   elasticsearch:
-      image: docker.elastic.co/elasticsearch/elasticsearch:5.6.4
+      image: elasticsearch:7.9.2
       container_name: elastic
       environment:
         - xpack.security.enabled=false
         - xpack.monitoring.enabled=false
+        - discovery.type=single-node
         - "ES_JAVA_OPTS=-Xmx512m -Xms512m"
       ports:
         - 9200:9200
