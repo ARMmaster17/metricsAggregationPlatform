@@ -22,8 +22,8 @@ class Aggregator {
                                                         String AGG_NAME) {
         String starterCheck = AGG_NAME.split("-")[0];
         //Group the Stream based on the key
-        //KGroupedStream<String, String> kGroupedStreamCount
-        //        = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
+        KGroupedStream<String, String> kGroupedStreamCount
+                = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
         //END COUNT OPERATIONS
         /*return kGroupedStreamCount.aggregate(
                 () -> 0L,
@@ -31,7 +31,7 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);*/
-        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null).windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
+        return kGroupedStreamCount.windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
                 new Initializer<Long>() {
                     @Override
                     public Long apply() {
@@ -41,10 +41,9 @@ class Aggregator {
                 new org.apache.kafka.streams.kstream.Aggregator<String, String, Long>() {
                     @Override
                     public Long apply(String key, String value, Long aggregate) {
-                        return null;
+                        return aggregate++;
                     }
-                },
-                Materialized.as(AGG_NAME)
+                }
         );
         // TODO: Fix aggregate function.
     }
@@ -62,8 +61,8 @@ class Aggregator {
                                                       String MAIN_ACTION_FIELD) {
         String starterCheck = AGG_NAME.split("-")[0];
         //Group the Stream based on the key
-        //KGroupedStream<String, String> kGroupedStreamSum
-        //        = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
+        KGroupedStream<String, String> kGroupedStreamSum
+                = kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null);
         //END SUM OPERATIONS
         /*return kGroupedStreamSum.aggregate(
                 () -> 0L,
@@ -74,7 +73,7 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);*/
-        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null).windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
+        return kGroupedStreamSum.windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
                 new Initializer<Long>() {
                       @Override
                       public Long apply() {
@@ -85,14 +84,10 @@ class Aggregator {
                     @Override
                     public Long apply(String key, String value, Long aggregate) {
                         JsonObject jsonObject = new JsonParser().parse(value).getAsJsonObject();
-                        if (jsonObject.has(MAIN_ACTION_FIELD)) {
-                            return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
-                        } else {
-                            return aggregate;
-                        }
+                        return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
                     }
-                },
-                Materialized.as(AGG_NAME));
+                }/*,
+                Serdes.Long()*/);
     }
 
     /**

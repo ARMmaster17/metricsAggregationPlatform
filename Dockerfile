@@ -14,7 +14,5 @@ ENV JAVA_OPTS="-Xmx1G -Xms1G"
 ENV NUM_THREADS 4
 RUN mkdir -p /etc/jaggia
 
-EXPOSE 5005
-
 ADD dockerEntryPoint.sh /dockerEntryPoint.sh
 ENTRYPOINT ["/dockerEntryPoint.sh"]

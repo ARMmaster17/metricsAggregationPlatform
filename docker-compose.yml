@@ -6,17 +6,15 @@ services:
      context: .
     volumes:
      - ${PWD}/etc/:/etc/jaggia/
-    ports:
-      - 5005:5005
     environment:
      - NUM_THREADS=1
      - SNAPSHOT=1
-     - JAVA_OPTS=-Xmx2G -Xms2G -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005
+     - JAVA_OPTS=-Xmx2G -Xms2G
     command: /home/kafkaJar.jar
     restart: unless-stopped
     depends_on:
      - influxdb
-#     - kafka
+     - kafka
 
   db_jar:
     image: openjdk:8
@@ -110,7 +108,7 @@ services:
         - 9200:9200
 
   kibana:
-      image: docker.elastic.co/kibana/kibana:7.9.2
+      image: docker.elastic.co/kibana/kibana:5.6.4
       container_name: kibana
       ports:
         - 5601:5601
