@@ -9,14 +9,11 @@ import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
-import org.apache.kafka.streams.kstream.TimeWindowedSerializer;
-import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.internals.WindowedDeserializer;
+import org.apache.kafka.streams.kstream.internals.WindowedSerializer;
 import org.apache.log4j.LogManager;
 
 import java.text.NumberFormat;
@@ -48,8 +45,8 @@ class Consumer {
 
     private static final org.apache.log4j.Logger logger = LogManager.getLogger(Consumer.class);
 
-    private static final TimeWindowedSerializer<String> windowedSerializer = new TimeWindowedSerializer(Serdes.String().serializer());
-    private static final TimeWindowedDeserializer<String> windowedDeserializer = new TimeWindowedDeserializer(Serdes.String().deserializer());
+    private static final WindowedSerializer<String> windowedSerializer = new WindowedSerializer<>(Serdes.String().serializer());
+    private static final WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer());
     private static final Serde<Windowed<String>> windowSerdes = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
     private static final Serde<String> stringSerde = Serdes.String();
     private static final Serde<Long> longSerde = Serdes.Long();
@@ -108,7 +105,6 @@ class Consumer {
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, TimeStampExtractor.class);
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, System.getenv("NUM_THREADS"));
-        props.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
 
@@ -126,16 +122,13 @@ class Consumer {
 
         try {
             streams.cleanUp();
+            logger.info("Starting...");
+            streams.start();
             streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
                 logger.info(throwable.getMessage());
                 throwable.printStackTrace();
                 System.exit(1);
             });
-            logger.info("Starting...");
-            streams.start();
-            while(streams.state() == KafkaStreams.State.REBALANCING) {
-                Thread.sleep(500);
-            }
             logger.info("Running :)");
 
             // attach shutdown handler to catch control-c
@@ -208,8 +201,8 @@ class Consumer {
      */
     private static KafkaStreams createStreams(final Properties streamsConfiguration, AtomicLong counter) {
 
-        StreamsBuilder builder = new StreamsBuilder();
-        KStream<String, String> inputStream = builder.stream(INPUT_TOPIC);
+        KStreamBuilder builder = new KStreamBuilder();
+        KStream<String, String> inputStream = builder.stream(stringSerde, stringSerde, INPUT_TOPIC);
         createAllGlobalTables(inputStream);
 
         KStream<String, String> outputStream = inputStream.flatMap((key, value) -> {
@@ -262,7 +255,7 @@ class Consumer {
                 e.printStackTrace();
             }
         }
-        return new KafkaStreams(builder.build(), streamsConfiguration);
+        return new KafkaStreams(builder, streamsConfiguration);
     }
 
     /**
@@ -275,8 +268,7 @@ class Consumer {
     private static <T> void sendToOutputTopic(KTable<Windowed<String>, T> kTable,
                                               String aggName, Serde<T> valSerde) {
         logger.info("Sending to output topic : " + aggName);
-        //kTable.toStream().to(windowSerdes, valSerde, aggName);
-        kTable.toStream().to(aggName);
+        kTable.toStream().to(windowSerdes, valSerde, aggName);
         }
 
     /**

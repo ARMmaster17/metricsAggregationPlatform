@@ -9,12 +9,12 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.InvalidStateStoreException;
-import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
-import org.apache.kafka.streams.kstream.TimeWindowedSerializer;
+import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.kstream.internals.WindowedDeserializer;
+import org.apache.kafka.streams.kstream.internals.WindowedSerializer;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreType;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -23,7 +23,6 @@ import org.apache.log4j.LogManager;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.influxdb.InfluxDB;
@@ -40,8 +39,8 @@ import java.util.concurrent.TimeUnit;
 
 public class DatabaseWriter {
 
-    private static final TimeWindowedSerializer<String> windowedSerializer = new TimeWindowedSerializer<>(Serdes.String().serializer());
-    private static final TimeWindowedDeserializer<String> windowedDeserializer = new TimeWindowedDeserializer<>(Serdes.String().deserializer());
+    private static final WindowedSerializer<String> windowedSerializer = new WindowedSerializer<>(Serdes.String().serializer());
+    private static final WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer());
     private static final Serde<Windowed<String>> windowSerdes = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
     private static final Serde<Long> longSerde = Serdes.Long();
     private static final Serde<String> stringSerde = Serdes.String();
@@ -291,26 +290,23 @@ public class DatabaseWriter {
      * @return an instance of KafkaStreams that we start() the application on
      */
     private static KafkaStreams createStreams(final Properties streamsConfiguration) {
-        StreamsBuilder builder = new StreamsBuilder();
+        KStreamBuilder builder = new KStreamBuilder();
         //global table of phn2cachegroup etc
         for (LinkedHashMap global_table : global_tables) {
             String tableAndStoreName = global_table.get("name").toString();
-            //builder.globalTable(stringSerde, stringSerde, tableAndStoreName, tableAndStoreName);
-            builder.globalTable(tableAndStoreName);
+            builder.globalTable(stringSerde, stringSerde, tableAndStoreName, tableAndStoreName);
         }
         //actual aggregations
         for (LinkedHashMap anAgg : agg) {
             if (anAgg.get("action").equals("mean")) {
                 String tableTopicAndName = anAgg.get("name").toString();
-                //builder.globalTable(windowSerdes, Serdes.Double(), tableTopicAndName, tableTopicAndName);
-                builder.globalTable(tableTopicAndName);
+                builder.globalTable(windowSerdes, Serdes.Double(), tableTopicAndName, tableTopicAndName);
             } else {
                 String tableTopicAndName = anAgg.get("name").toString();
-                //builder.globalTable(windowSerdes, longSerde, tableTopicAndName, tableTopicAndName);
-                builder.globalTable(tableTopicAndName);
+                builder.globalTable(windowSerdes, longSerde, tableTopicAndName, tableTopicAndName);
             }
         }
-        return new KafkaStreams(builder.build(), streamsConfiguration);
+        return new KafkaStreams(builder, streamsConfiguration);
     }
 
     /**
@@ -437,7 +433,7 @@ public class DatabaseWriter {
     private static void write2Elastic(BulkRequest bulkRequest) {
         try {
             if (bulkRequest.numberOfActions() != 0) {
-                BulkResponse response = highLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+                BulkResponse response = highLevelClient.bulk(bulkRequest);
                 logger.info("(ElasticSearch) Wrote " + response.getItems().length + " records.");
             } else {
                 logger.info("(ElasticSearch) Wrote 0 records.");

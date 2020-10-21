@@ -1,25 +1,23 @@
 version: '3'
 services:
   kafka_jar:
-    image: openjdk:8
+    image: runjava
     build:
      context: .
     volumes:
      - ${PWD}/etc/:/etc/jaggia/
-    ports:
-      - 5005:5005
     environment:
      - NUM_THREADS=1
      - SNAPSHOT=1
-     - JAVA_OPTS=-Xmx2G -Xms2G -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005
+     - JAVA_OPTS=-Xmx2G -Xms2G
     command: /home/kafkaJar.jar
     restart: unless-stopped
     depends_on:
      - influxdb
-#     - kafka
+     - kafka
 
   db_jar:
-    image: openjdk:8
+    image: runjava
     volumes:
      - ${PWD}/etc/:/etc/jaggia/
     environment:
@@ -33,7 +31,7 @@ services:
      - kafka
 
   snapshot_jar:
-   image: openjdk:8
+   image: runjava
    volumes:
     - ${PWD}/etc/:/etc/jaggia/
    environment:
@@ -51,32 +49,17 @@ services:
     volumes:
      - influxdb-storage:/var/lib/influxdb
 
-  zookeeper:
-    container_name: zookeeper
-    image: confluentinc/cp-zookeeper:latest
-    ports:
-      - 2181:2181
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-
   kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    ports:
-      - 9092:9092
+    image: kafka:0.10.2.1
+    build:
+     context: kafka/kafka
+     args:
+       KAFKA_VERSION: 0.10.2.1
     container_name: kafka
-    volumes:
-     - ${PWD}/etc/server.properties:/etc/kafka/server.properties
-    environment:
-      - KAFKA_VERSION=2.6.0
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ADVERTISED_HOST_NAME=kafka
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_CREATE_TOPICS=logstash:1:16,phn_to_cachegroup:1:16,cachegroup_to_cdn:1:16,count_pssc:1:16,sum_b:1:16
-      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    #volumes:
+    # - ${PWD}/etc/server.properties:/opt/kafka/conf/server.properties
+    #environment:
+    # - KAFKA_VERSION=0.11.0.1
 
   grafana:
     container_name: grafana
@@ -89,7 +72,7 @@ services:
      - grafana-storage:/var/lib/grafana
 
   logstash:
-    image: logstash:7.9.2
+    image: docker.elastic.co/logstash/logstash:5.5.2
     container_name: logstash
     volumes:
      - ${PWD}/conf.d/:/usr/share/logstash/pipeline/
@@ -99,18 +82,17 @@ services:
      - kafka
 
   elasticsearch:
-      image: elasticsearch:7.9.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:5.6.4
       container_name: elastic
       environment:
         - xpack.security.enabled=false
         - xpack.monitoring.enabled=false
-        - discovery.type=single-node
         - "ES_JAVA_OPTS=-Xmx512m -Xms512m"
       ports:
         - 9200:9200
 
   kibana:
-      image: docker.elastic.co/kibana/kibana:7.9.2
+      image: docker.elastic.co/kibana/kibana:5.6.4
       container_name: kibana
       ports:
         - 5601:5601
