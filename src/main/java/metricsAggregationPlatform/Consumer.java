@@ -48,8 +48,8 @@ class Consumer {
 
     private static final org.apache.log4j.Logger logger = LogManager.getLogger(Consumer.class);
 
-    private static final TimeWindowedSerializer<String> windowedSerializer = new TimeWindowedSerializer<>(Serdes.String().serializer());
-    private static final TimeWindowedDeserializer<String> windowedDeserializer = new TimeWindowedDeserializer<>(Serdes.String().deserializer());
+    private static final TimeWindowedSerializer<String> windowedSerializer = new TimeWindowedSerializer(Serdes.String().serializer());
+    private static final TimeWindowedDeserializer<String> windowedDeserializer = new TimeWindowedDeserializer(Serdes.String().deserializer());
     private static final Serde<Windowed<String>> windowSerdes = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
     private static final Serde<String> stringSerde = Serdes.String();
     private static final Serde<Long> longSerde = Serdes.Long();
@@ -126,13 +126,16 @@ class Consumer {
 
         try {
             streams.cleanUp();
-            logger.info("Starting...");
-            streams.start();
             streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
                 logger.info(throwable.getMessage());
                 throwable.printStackTrace();
                 System.exit(1);
             });
+            logger.info("Starting...");
+            streams.start();
+            while(streams.state() == KafkaStreams.State.REBALANCING) {
+                Thread.sleep(500);
+            }
             logger.info("Running :)");
 
             // attach shutdown handler to catch control-c
