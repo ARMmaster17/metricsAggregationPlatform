@@ -9,12 +9,12 @@ services:
     environment:
      - NUM_THREADS=1
      - SNAPSHOT=1
-     - JAVA_OPTS=-Xmx2G -Xms2G
+     - JAVA_OPTS=-Xmx2G -Xms2G -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005
     command: /home/kafkaJar.jar
     restart: unless-stopped
     depends_on:
      - influxdb
-     - kafka
+#     - kafka
 
   db_jar:
     image: runjava
