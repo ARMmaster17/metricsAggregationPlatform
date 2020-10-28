@@ -11,9 +11,13 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.kstream.internals.WindowedDeserializer;
-import org.apache.kafka.streams.kstream.internals.WindowedSerializer;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
+import org.apache.kafka.streams.kstream.TimeWindowedSerializer;
+import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.log4j.LogManager;
 
 import java.text.NumberFormat;
@@ -45,8 +49,8 @@ class Consumer {
 
     private static final org.apache.log4j.Logger logger = LogManager.getLogger(Consumer.class);
 
-    private static final WindowedSerializer<String> windowedSerializer = new WindowedSerializer<>(Serdes.String().serializer());
-    private static final WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer());
+    private static final TimeWindowedSerializer<String> windowedSerializer = new TimeWindowedSerializer<>(Serdes.String().serializer());
+    private static final TimeWindowedDeserializer<String> windowedDeserializer = new TimeWindowedDeserializer<>(Serdes.String().deserializer());
     private static final Serde<Windowed<String>> windowSerdes = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
     private static final Serde<String> stringSerde = Serdes.String();
     private static final Serde<Long> longSerde = Serdes.Long();
@@ -201,8 +205,8 @@ class Consumer {
      */
     private static KafkaStreams createStreams(final Properties streamsConfiguration, AtomicLong counter) {
 
-        KStreamBuilder builder = new KStreamBuilder();
-        KStream<String, String> inputStream = builder.stream(stringSerde, stringSerde, INPUT_TOPIC);
+        StreamsBuilder builder = new StreamsBuilder();
+        KStream<String, String> inputStream = builder.stream(INPUT_TOPIC);
         createAllGlobalTables(inputStream);
 
         KStream<String, String> outputStream = inputStream.flatMap((key, value) -> {
@@ -255,7 +259,7 @@ class Consumer {
                 e.printStackTrace();
             }
         }
-        return new KafkaStreams(builder, streamsConfiguration);
+        return new KafkaStreams(builder.build(), streamsConfiguration);
     }
 
     /**
@@ -268,7 +272,7 @@ class Consumer {
     private static <T> void sendToOutputTopic(KTable<Windowed<String>, T> kTable,
                                               String aggName, Serde<T> valSerde) {
         logger.info("Sending to output topic : " + aggName);
-        kTable.toStream().to(windowSerdes, valSerde, aggName);
+        kTable.toStream().to(aggName, Produced.with(windowSerdes, valSerde));
         }
 
     /**
