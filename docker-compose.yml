@@ -1,7 +1,7 @@
 version: '3'
 services:
   kafka_jar:
-    image: runjava
+    image: openjdk:8
     build:
      context: .
     volumes:
@@ -14,10 +14,10 @@ services:
     restart: unless-stopped
     depends_on:
      - influxdb
-     - kafka
+#     - kafka
 
   db_jar:
-    image: runjava
+    image: openjdk:8
     volumes:
      - ${PWD}/etc/:/etc/jaggia/
     environment:
@@ -31,7 +31,7 @@ services:
      - kafka
 
   snapshot_jar:
-   image: runjava
+   image: openjdk:8
    volumes:
     - ${PWD}/etc/:/etc/jaggia/
    environment:
@@ -72,7 +72,7 @@ services:
      - grafana-storage:/var/lib/grafana
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:5.5.2
+    image: logstash:7.9.2
     container_name: logstash
     volumes:
      - ${PWD}/conf.d/:/usr/share/logstash/pipeline/
