@@ -1,8 +1,7 @@
 kafka:
   input:
-#    bootstrap_servers: kafka:9092
-    bootstrap_servers: psp6cdkafka0001.coxlab.net:9092
-    input_topic: access_ats_edge
+    bootstrap_servers: kafka:9092
+    input_topic: logstashTopic
     app_id: snafu
   output:
     output_topic: output

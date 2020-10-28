@@ -272,7 +272,6 @@ class Consumer {
     private static <T> void sendToOutputTopic(KTable<Windowed<String>, T> kTable,
                                               String aggName, Serde<T> valSerde) {
         logger.info("Sending to output topic : " + aggName);
-        //kTable.toStream().to(windowSerdes, valSerde, aggName);
         kTable.toStream().to(aggName, Produced.with(windowSerdes, valSerde));
         }
 
