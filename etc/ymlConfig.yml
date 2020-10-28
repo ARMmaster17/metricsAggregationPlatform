@@ -59,6 +59,8 @@ agg:
      - phn_to_cachegroup
      - cachegroup_to_cdn
 
+local_mode: yes
+
 #  -
 #   name: mean_ttms
 #   action: mean
