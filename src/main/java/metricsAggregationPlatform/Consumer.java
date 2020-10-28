@@ -13,6 +13,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
 import org.apache.kafka.streams.kstream.TimeWindowedSerializer;
 import org.apache.kafka.streams.kstream.Windowed;
@@ -272,7 +273,7 @@ class Consumer {
                                               String aggName, Serde<T> valSerde) {
         logger.info("Sending to output topic : " + aggName);
         //kTable.toStream().to(windowSerdes, valSerde, aggName);
-        kTable.toStream().to(aggName);
+        kTable.toStream().to(aggName, Produced.with(windowSerdes, valSerde));
         }
 
     /**

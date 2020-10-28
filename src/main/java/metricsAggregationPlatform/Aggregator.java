@@ -5,9 +5,14 @@ import com.google.gson.JsonParser;
 import org.apache.kafka.common.metrics.stats.Count;
 import org.apache.kafka.common.metrics.stats.WindowedCount;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.state.SessionStore;
+import org.apache.kafka.streams.state.WindowStore;
 
 import java.time.Duration;
+
+import static org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded;
 
 class Aggregator {
 
@@ -31,7 +36,7 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);*/
-        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null).windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
+        /*return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null).windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
                 new Initializer<Long>() {
                     @Override
                     public Long apply() {
@@ -45,7 +50,11 @@ class Aggregator {
                     }
                 },
                 Materialized.as(AGG_NAME)
-        );
+        );*/
+        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null)
+                .windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L))
+                .count()
+                /*.suppress(Suppressed.untilWindowCloses(unbounded()))*/;
     }
 
     /**
@@ -73,25 +82,33 @@ class Aggregator {
                 TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L), //1 min windows for 24 hours
                 Serdes.Long(),
                 AGG_NAME);*/
-        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null).windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L)).aggregate(
-                new Initializer<Long>() {
-                    @Override
-                    public Long apply() {
-                        return 0L;
-                    }
-                },
-                new org.apache.kafka.streams.kstream.Aggregator<String, String, Long>() {
-                    @Override
-                    public Long apply(String key, String value, Long aggregate) {
-                        JsonObject jsonObject = new JsonParser().parse(value).getAsJsonObject();
-                        if (jsonObject.has(MAIN_ACTION_FIELD)) {
-                            return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
-                        } else {
-                            return aggregate;
+        return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null, Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L))
+                .aggregate(
+                    new Initializer<Long>() {
+                        @Override
+                        public Long apply() {
+                            return 0L;
                         }
-                    }
-                },
-                Materialized.as(AGG_NAME));
+                    },
+                    new org.apache.kafka.streams.kstream.Aggregator<String, String, Long>() {
+                        @Override
+                        public Long apply(String key, String value, Long aggregate) {
+                            JsonObject jsonObject = new JsonParser().parse(value).getAsJsonObject();
+                            if (jsonObject.has(MAIN_ACTION_FIELD)) {
+                                System.out.println(value);
+                                try {
+                                    return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
+                                } catch (ClassCastException e) {
+                                    return aggregate;
+                                }
+                            } else {
+                                return aggregate;
+                            }
+                        }
+                    },
+                    Materialized.<String, Long, WindowStore<Bytes, byte[]>>as(AGG_NAME).withKeySerde(Serdes.String()).withValueSerde(Serdes.Long()));
+                    /*Materialized.with(Serdes.String(), Serdes.Long()));*/
     }
 
     /**
