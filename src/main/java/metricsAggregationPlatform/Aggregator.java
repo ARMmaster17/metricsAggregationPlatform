@@ -9,9 +9,12 @@ import org.apache.kafka.streams.state.WindowStore;
 
 import java.time.Duration;
 
-import static org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded;
-
 class Aggregator {
+
+    // Size of aggregation windows in minutes.
+    private final static int TIME_WINDOW_SIZE = 1;
+    // How long to maintain a time window.
+    private final static long WINDOW_MAINTAIN_DURATION = 24 * 60 * 60 * 1000L;
 
     /**
      * Count aggregation function
@@ -20,13 +23,15 @@ class Aggregator {
      *                 This is also the topic name & the string that differentiates the keys
      * @return the final aggregated kTable
      */
-    KTable<Windowed<String>, Long> count(KStream<String, String> kStream,
+    public KTable<Windowed<String>, Long> count(KStream<String, String> kStream,
                                                         String AGG_NAME) {
         String starterCheck = AGG_NAME.split("-")[0];
         //Group the Stream based on the key
         return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null)
-                .windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L))
+                .windowedBy(TimeWindows.of(Duration.ofMinutes(TIME_WINDOW_SIZE)).until(WINDOW_MAINTAIN_DURATION))
                 .count();
+        // TODO: Add Suppress() filter to not release window until it is complete. Note that this
+        // filter will cause Serdes issues at runtime.
     }
 
     /**
@@ -37,12 +42,12 @@ class Aggregator {
      * @param MAIN_ACTION_FIELD the field which we want to add up
      * @return the final aggregated kTable
      */
-    KTable<Windowed<String>, Long> sum(KStream<String, String> kStream,
+    public KTable<Windowed<String>, Long> sum(KStream<String, String> kStream,
                                                       String AGG_NAME,
                                                       String MAIN_ACTION_FIELD) {
         String starterCheck = AGG_NAME.split("-")[0];
         return kStream.groupBy((key, value) -> key.startsWith(starterCheck) ? key : null, Grouped.with(Serdes.String(), Serdes.String()))
-                .windowedBy(TimeWindows.of(60 * 1000L).until(24 * 60 * 60 * 1000L))
+                .windowedBy(TimeWindows.of(Duration.ofMinutes(TIME_WINDOW_SIZE)).until(WINDOW_MAINTAIN_DURATION))
                 .aggregate(
                     new Initializer<Long>() {
                         @Override
@@ -59,6 +64,7 @@ class Aggregator {
                                 try {
                                     return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
                                 } catch (ClassCastException e) {
+                                    // TODO: Log in some way that we received a malformed value in the logs.
                                     return aggregate;
                                 }
                             } else {
@@ -67,6 +73,8 @@ class Aggregator {
                         }
                     },
                     Materialized.<String, Long, WindowStore<Bytes, byte[]>>as(AGG_NAME).withKeySerde(Serdes.String()).withValueSerde(Serdes.Long()));
+        // TODO: Add Suppress() filter to not release window until it is complete. Note that this
+        // filter will cause Serdes issues at runtime.
     }
 
     /**

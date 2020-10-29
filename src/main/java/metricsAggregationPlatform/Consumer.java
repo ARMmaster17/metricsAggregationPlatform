@@ -32,7 +32,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-
+/**
+ * Manages connection to Kafka and creates Aggregator objects that perform stream
+ * operations. Singleton class.
+ */
 class Consumer {
     private static String BOOTSTRAP_SERVERS;
     private static String INPUT_TOPIC;
