@@ -14,34 +14,18 @@ services:
     restart: unless-stopped
     depends_on:
      - influxdb
-#     - kafka
-
-  db_jar:
-    image: openjdk:8
-    volumes:
-     - ${PWD}/etc/:/etc/jaggia/
-    environment:
-     - NUM_THREADS=1
-     - SNAPSHOT=0
-     - JAVA_OPTS=-Xmx1G -Xms1G
-    command: /home/dbJar.jar
-    restart: unless-stopped
-    depends_on:
-     - influxdb
      - kafka
 
-  snapshot_jar:
-   image: openjdk:8
-   volumes:
-    - ${PWD}/etc/:/etc/jaggia/
-   environment:
-    - NUM_THREADS=1
-    - SNAPSHOT=1
-    - JAVA_OPTS=-Xmx2G -Xms2G
-   command: /home/dbJar.jar
-   depends_on:
-    - influxdb
-    - kafka
+  connect_api:
+    image: confluentinc/cp-kafka-connect-base:6.0.0
+    build:
+      context: ${PWD}/connect_api/
+    volumes:
+      - ${PWD}/connect_api/etc/kconnect/:/etc/kconnect/
+    command: bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx1.properties
+    depends_on:
+      - influxdb
+      - kafka_jar
 
   influxdb:
     image: influxdb
@@ -68,7 +52,7 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
 
   zookeeper:
-    container_name: zookeeper
+    container_name: zookeeper:3.5.8
     image: confluentinc/cp-zookeeper:latest
     ports:
       - 2181:2181
