@@ -129,13 +129,13 @@ class Consumer {
 
         try {
             streams.cleanUp();
-            logger.info("Starting...");
-            streams.start();
             streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
                 logger.info(throwable.getMessage());
                 throwable.printStackTrace();
                 System.exit(1);
             });
+            logger.info("Starting...");
+            streams.start();
             logger.info("Running :)");
 
             // attach shutdown handler to catch control-c

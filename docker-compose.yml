@@ -17,12 +17,13 @@ services:
      - kafka
 
   connect_api:
-    image: confluentinc/cp-kafka-connect-base:6.0.0
+    image: confluentinc/cp-kafka:6.0.0
     build:
-      context: ${PWD}/connect_api/
+      context: ./connect_api
     volumes:
-      - ${PWD}/connect_api/etc/kconnect/:/etc/kconnect/
-    command: bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx1.properties
+      - ${PWD}/connect_api/kconnect/worker.properties:/etc/kconnect/worker.properties
+      - ${PWD}/connect_api/kconnect/influx-connector.properties:/etc/kconnect/influx-connector.properties
+    command: confluent-hub install --no-prompt confluentinc/kafka-connect-influxdb:1.2.1 && /bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx-connector.properties
     depends_on:
       - influxdb
       - kafka_jar
@@ -34,7 +35,7 @@ services:
      - influxdb-storage:/var/lib/influxdb
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:latest # TODO: Lock current version
     depends_on:
       - zookeeper
     ports:
@@ -52,8 +53,8 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
 
   zookeeper:
-    container_name: zookeeper:3.5.8
-    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:5.4.3
     ports:
       - 2181:2181
     environment:
