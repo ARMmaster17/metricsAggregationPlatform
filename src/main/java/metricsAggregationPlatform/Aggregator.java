@@ -60,7 +60,6 @@ class Aggregator {
                         public Long apply(String key, String value, Long aggregate) {
                             JsonObject jsonObject = new JsonParser().parse(value).getAsJsonObject();
                             if (jsonObject.has(MAIN_ACTION_FIELD)) {
-                                System.out.println(value);
                                 try {
                                     return aggregate + jsonObject.get(MAIN_ACTION_FIELD).getAsLong();
                                 } catch (ClassCastException e) {

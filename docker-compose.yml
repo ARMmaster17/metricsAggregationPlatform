@@ -23,10 +23,12 @@ services:
     volumes:
       - ${PWD}/connect_api/kconnect/worker.properties:/etc/kconnect/worker.properties
       - ${PWD}/connect_api/kconnect/influx-connector.properties:/etc/kconnect/influx-connector.properties
-    command: confluent-hub install --no-prompt confluentinc/kafka-connect-influxdb:1.2.1 && /bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx-connector.properties
+    command: "/bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx-connector.properties"
     depends_on:
       - influxdb
       - kafka_jar
+    environment:
+      - CONNECT_PLUGIN_PATH=/usr/share/java/kafka/
 
   influxdb:
     image: influxdb
