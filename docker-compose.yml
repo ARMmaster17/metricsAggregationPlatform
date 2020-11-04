@@ -16,19 +16,32 @@ services:
      - influxdb
      - kafka
 
-  connect_api:
-    image: confluentinc/cp-kafka:6.0.0
-    build:
-      context: ./connect_api
+  db_jar:
+    image: openjdk:8
     volumes:
-      - ${PWD}/connect_api/kconnect/worker.properties:/etc/kconnect/worker.properties
-      - ${PWD}/connect_api/kconnect/influx-connector.properties:/etc/kconnect/influx-connector.properties
-    command: "/bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx-connector.properties"
+      - ${PWD}/etc/:/etc/jaggia/
+    environment:
+      - NUM_THREADS=1
+      - SNAPSHOT=0
+      - JAVA_OPTS=-Xmx1G -Xms1G
+    command: /home/dbJar.jar
+    restart: unless-stopped
     depends_on:
       - influxdb
-      - kafka_jar
+      - kafka
+
+  snapshot_jar:
+    image: openjdk:8
+    volumes:
+      - ${PWD}/etc/:/etc/jaggia/
     environment:
-      - CONNECT_PLUGIN_PATH=/usr/share/java/kafka/
+      - NUM_THREADS=1
+      - SNAPSHOT=1
+      - JAVA_OPTS=-Xmx2G -Xms2G
+    command: /home/dbJar.jar
+    depends_on:
+      - influxdb
+      - kafka
 
   influxdb:
     image: influxdb

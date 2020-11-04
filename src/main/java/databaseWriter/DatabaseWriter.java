@@ -93,7 +93,7 @@ public class DatabaseWriter {
             DB_NAME = influxConfig.get("db_name");
             RP_NAME = influxConfig.get("rp_name"); //for 2.7. can create only in >2.7
             try {
-                influxDB = InfluxDBFactory.connect(URL, "root", "root");
+                influxDB = InfluxDBFactory.connect(URL);
                 if (!influxDB.databaseExists(DB_NAME)) {
                     influxDB.createDatabase(DB_NAME);
                 }
@@ -170,7 +170,6 @@ public class DatabaseWriter {
         try {
             streams.cleanUp();
             logger.info("Starting...");
-            streams.start();
             streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
                 if (!(throwable.getLocalizedMessage().startsWith("Assigned partition")
                     || (throwable.getLocalizedMessage().startsWith("Validation Failed")))) {
@@ -179,6 +178,7 @@ public class DatabaseWriter {
                     System.exit(1);
                 }
             });
+            streams.start();
             logger.info("Running :)");
 
             // attach shutdown handler to catch control-c
