@@ -157,14 +157,14 @@ class Consumer {
                         try {
                             Long tempValueHold = counter.longValue();
                             if (DatabaseWriter != null && DatabaseWriter.getPing() != null) {
-                                if (!counterHalted(tempValueHold, previousCount)) {
+                                //if (!counterHalted(tempValueHold, previousCount)) {
                                     DatabaseWriter.writeMessageCount(tempValueHold, CONTAINER_ID);
                                     previousCount.set(tempValueHold);
-                                } else {
-                                    halted = true;
+                                //} else {
+                                //    halted = true;
                                     logger.info("Messages so far : " + counter.longValue());
-                                    throw new Exception("Message counter halted");
-                                }
+                                //    throw new Exception("Message counter halted");
+                                //}
                             } else {
                                 throw new Exception("Not connected to Influx");
                             }

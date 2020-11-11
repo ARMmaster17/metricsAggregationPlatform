@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.kstream.TimeWindowedDeserializer;
@@ -330,7 +331,7 @@ public class DatabaseWriter {
 
         ReadOnlyKeyValueStore<Windowed<String>,Long> localAggStore
                 = waitUntilStoreIsQueryable(storeName,
-                QueryableStoreTypes.<Windowed<String>, Long>keyValueStore(),
+                QueryableStoreTypes.keyValueStore(),
                 streams);
         logger.info("Got : " + storeName);
         logger.info("Querying from: " + new Date(timeFrom)
@@ -473,6 +474,7 @@ public class DatabaseWriter {
                 // store not yet ready for querying
                 Thread.sleep(5000);
                 logger.info("Fetching state stores... " + storeName);
+                logger.error(ignored.getMessage());
             }
         }
     }
