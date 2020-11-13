@@ -84,7 +84,7 @@ public class DatabaseWriter {
         Map<String, Map<String, String>> kafka_inputs =
                 (Map<String, Map<String, String>>) appConfig.get("kafka");
         BOOTSTRAP_SERVERS = kafka_inputs.get("input").get("bootstrap_servers");
-        APP_ID = kafka_inputs.get("input").get("app_id");
+        APP_ID = kafka_inputs.get("input").get("app_id") + "-db";
 
         LinkedHashMap<String, String> influxConfig =
                 (LinkedHashMap<String, String>) appConfig.get("influxdb");
@@ -297,18 +297,18 @@ public class DatabaseWriter {
         for (LinkedHashMap global_table : global_tables) {
             String tableAndStoreName = global_table.get("name").toString();
             //builder.globalTable(stringSerde, stringSerde, tableAndStoreName, tableAndStoreName);
-            builder.globalTable(tableAndStoreName);
+            builder.globalTable(tableAndStoreName, Materialized.as(tableAndStoreName));
         }
         //actual aggregations
         for (LinkedHashMap anAgg : agg) {
             if (anAgg.get("action").equals("mean")) {
                 String tableTopicAndName = anAgg.get("name").toString();
                 //builder.globalTable(windowSerdes, Serdes.Double(), tableTopicAndName, tableTopicAndName);
-                builder.globalTable(tableTopicAndName);
+                builder.globalTable(tableTopicAndName, Materialized.as(tableTopicAndName));
             } else {
                 String tableTopicAndName = anAgg.get("name").toString();
                 //builder.globalTable(windowSerdes, longSerde, tableTopicAndName, tableTopicAndName);
-                builder.globalTable(tableTopicAndName);
+                builder.globalTable(tableTopicAndName, Materialized.as(tableTopicAndName));
             }
         }
         return new KafkaStreams(builder.build(), streamsConfiguration);
@@ -475,6 +475,8 @@ public class DatabaseWriter {
                 Thread.sleep(5000);
                 logger.info("Fetching state stores... " + storeName);
                 logger.error(ignored.getMessage());
+                logger.error(ignored.getStackTrace());
+                logger.error("Stream is in state: " + streams.state().name());
             }
         }
     }
