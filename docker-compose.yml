@@ -1,7 +1,7 @@
 version: '3'
 services:
-  kafka_jar:
-    image: openjdk:8
+  metricsaggregationplatform:
+    image: openjdk:9
     build:
      context: .
     volumes:
@@ -14,53 +14,41 @@ services:
     restart: unless-stopped
     depends_on:
      - influxdb
-     - kafka
-
-  connect_api:
-    image: confluentinc/cp-kafka:6.0.0
-    build:
-      context: ./connect_api
-    volumes:
-      - ${PWD}/connect_api/kconnect/worker.properties:/etc/kconnect/worker.properties
-      - ${PWD}/connect_api/kconnect/influx-connector.properties:/etc/kconnect/influx-connector.properties
-    command: "/bin/connect-standalone /etc/kconnect/worker.properties /etc/kconnect/influx-connector.properties"
-    depends_on:
-      - influxdb
-      - kafka_jar
-    environment:
-      - CONNECT_PLUGIN_PATH=/usr/share/java/kafka/
+#     - kafka
 
   influxdb:
     image: influxdb
     container_name: influxdb
     volumes:
      - influxdb-storage:/var/lib/influxdb
-
-  kafka:
-    image: confluentinc/cp-kafka:latest # TODO: Lock current version
-    depends_on:
-      - zookeeper
     ports:
-      - 9092:9092
-    volumes:
-      - ${PWD}/etc/server.properties:/etc/kafka/server.properties
-    environment:
-      - KAFKA_VERSION=2.6.0
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ADVERTISED_HOST_NAME=kafka
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_CREATE_TOPICS=logstash:1:16,phn_to_cachegroup:1:16,cachegroup_to_cdn:1:16,count_pssc:1:16,sum_b:1:16
-      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - 8086:8086
 
-  zookeeper:
-    container_name: zookeeper
-    image: confluentinc/cp-zookeeper:5.4.3
-    ports:
-      - 2181:2181
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
+#  kafka:
+#    image: confluentinc/cp-kafka:latest # TODO: Lock current version
+#    depends_on:
+#      - zookeeper
+#    ports:
+#      - 9092:9092
+#    volumes:
+#      - ${PWD}/etc/server.properties:/etc/kafka/server.properties
+#    environment:
+#      - KAFKA_VERSION=2.6.0
+#      - KAFKA_BROKER_ID=1
+#      - KAFKA_ADVERTISED_HOST_NAME=kafka
+#      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+#      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+#      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+#      - KAFKA_CREATE_TOPICS=logstash:1:16,phn_to_cachegroup:1:16,cachegroup_to_cdn:1:16,count_pssc:1:16,sum_b:1:16
+#      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+
+#  zookeeper:
+#    container_name: zookeeper
+#    image: confluentinc/cp-zookeeper:5.4.3
+#    ports:
+#      - 2181:2181
+#    environment:
+#      - ZOOKEEPER_CLIENT_PORT=2181
 
   grafana:
     container_name: grafana
@@ -71,16 +59,6 @@ services:
      - 3000:3000
     volumes:
      - grafana-storage:/var/lib/grafana
-
-  logstash:
-    image: logstash:7.9.2
-    container_name: logstash
-    volumes:
-     - ${PWD}/conf.d/:/usr/share/logstash/pipeline/
-    environment:
-     - XPACK_MONITORING_ENABLED=false
-    depends_on:
-     - kafka
 
   elasticsearch:
       image: elasticsearch:7.9.2
