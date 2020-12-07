@@ -57,7 +57,7 @@ public class MetricsAggregator {
             .withKeyDeserializer(StringDeserializer.class)
             .withValueDeserializer(StringDeserializer.class)
             .withConsumerConfigUpdates(ImmutableMap.of("auto.offset.reset", "earliest"))
-            .withConsumerConfigUpdates(ImmutableMap.of("group.id", "snafu4"))
+            .withConsumerConfigUpdates(ImmutableMap.of("group.id", "snafu"))
             .withConsumerConfigUpdates(ImmutableMap.of("enable.auto.commit", "true"))
             .commitOffsetsInFinalize());
         // Map all global tables.
