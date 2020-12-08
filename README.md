@@ -1,5 +1,35 @@
 # metricsAggregationPlatform
 
+## Branch descriptions
+`master` - A complete mess right now. Ignore.
+
+`poc-beam` - An attempt to port the project to use Apache Beam + Apache Flink. Most promising branch at the moment. Nearly complete.
+
+`wip-connect` - An attempt to port the project to use Kafka Connect. Very broken. May require more 3rd party tools (schema registry).
+
+`wip-stash` - An attempt to modify as little as possible of the original project. Currently, has schema issues with Kafka.
+
+## Why Apache Beam+Flink?
+
+Apache Beam+Flink has several advantages:
+- Extremely fast implementation. Most of the initial code for `poc-beam` was written in under two days.
+- The 2020 big data community reccomends Flink or Storm over raw Kafka approaches to stream data. (Beam+Flink also replaces traditional Apache spark for stream/ML).
+- Several sources *claim* an 80-93% performance increase over Kafka Connect API in aggregation tests with bounded datasets (as of April 2020).
+- Theoretically infinitely scalable independent of Kafka configuration (also fluid enough to allow for auto-scaling).
+- Simple implementation in under 140 LLOC (XX% reduction).
+- Good documentation, and easy to understand SDK (DSL written specifically for streaming workloads).
+- Minimal overhead from added abstraction layers (Approximately 1 GB per instance running in Direct runner mode).
+- Processing is done within the Flink cluster, reducing the number of round-trips between Kafka and the application.
+- Unit/Integration testing is much easier with mockable sources/sinks.
+
+Known drawbacks:
+- Apache Beam is newer, so it is more difficult to find the documentation/tutorials outside the official docs (which are very well written). The official docs are, however, much better than the Kafka SDK docs.
+- Although Flink supports inter-cluster failover, total loss of the Flink cluster will result in all data in-transit being lost. The amount of data that the Flink cluster can ingest and proccess at once increases the amount of data that can be lost in a critical failure. (Carefully re-winding offsets, using global tables, and using Flink runners instead of Direct runners can reduce this risk).
+- A few older sources *claim* that the Kafka I/O pipeline for Beam does not fully implement true "only once processing". This appears to be outdated information, and only applies when using the Direct runner.
+- Autonomous scaling will require an external orchestration service.
+
+## Summary
+
 This app aggregates all your kafka logs and ships the results to influxDB.
 The points are then visualized using grafana.
 
@@ -16,11 +46,19 @@ cd into the metricsAggregationPlatform directory and run the following commands 
 docker containers in this order.
 
 ```
-docker-compose up -d logstash kafka grafana kibana
-docker-compose up --scale kafka_jar=4
-
+docker-compose up -d influx grafana kibana
+docker-compose up metricsaggregationplatform
 ```
-You can scale the app as needed by putting in whatever number you'd like.
+Scaling is currently not supported, but can easily be added by switching to the Flink runner instead of the Direct runner.
+
+## Currently working
+Pipeline that performs all extractions and transformations.
+
+## Not working
+- Docker wrapper
+- Flink runner (using Direct runner at the moment)
+
+![ETL Flowchart](https://github.com/ARMmaster17/metricsAggregationPlatform/blob/poc-beam/doc/img/etl.png?raw=true)
 
 
 Sample YAML config file.
@@ -30,8 +68,6 @@ kafka:
     bootstrap_servers: kafka01
     input_topic: myKafkaTopic
     app_id: myID
-  output:
-    output_topic: output
 
 influxdb:
   connection : myInfluxLink

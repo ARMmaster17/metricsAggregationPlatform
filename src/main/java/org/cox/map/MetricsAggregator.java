@@ -60,18 +60,7 @@ public class MetricsAggregator {
             .withConsumerConfigUpdates(ImmutableMap.of("group.id", "snafu"))
             .withConsumerConfigUpdates(ImmutableMap.of("enable.auto.commit", "true"))
             .commitOffsetsInFinalize());
-        // Map all global tables.
-        /*ArrayList<LinkedHashMap> tbl = (ArrayList<LinkedHashMap>)appConfig.get("global_tables");
 
-        Map<String, PCollection> globalTables = new Hashtable<>();
-
-        for (LinkedHashMap anAgg : tbl) {
-            String configKey = anAgg.get("key").toString();
-            String configValue = anAgg.get("value").toString();
-            // TODO: Check if value field exists?
-            PCollection<KV<String, String>> globalTable = input.apply(ParDo.of(new MapGlobalTablesFn(configKey, configValue)));
-            globalTables.put(anAgg.get("name").toString(), globalTable);
-        }*/
         // Create the aggregation pipelines. Start by tagging the keys.
         ArrayList<LinkedHashMap> aggregations = (ArrayList<LinkedHashMap>)appConfig.get("agg");
         // TODO: These can be statically allocated for better startup performance.
