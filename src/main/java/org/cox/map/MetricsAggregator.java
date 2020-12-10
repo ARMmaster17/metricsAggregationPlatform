@@ -51,6 +51,7 @@ public class MetricsAggregator {
         Map<String, Object> kafkaConfig = (Map<String, Object>) appConfig.get("kafka");
         Map<String, Object> kafkaInConfig = (Map<String, Object>) kafkaConfig.get("input");
 
+        // 1. Data flows in from Kafka.
         PCollection<KafkaRecord<String, String>> input = pipeline.apply(KafkaIO.<String, String>read()
             .withBootstrapServers((String)kafkaInConfig.get("bootstrap_servers"))
             .withTopic((String)kafkaInConfig.get("input_topic"))
@@ -61,7 +62,7 @@ public class MetricsAggregator {
             .withConsumerConfigUpdates(ImmutableMap.of("enable.auto.commit", "true"))
             .commitOffsetsInFinalize());
 
-        // Create the aggregation pipelines. Start by tagging the keys.
+        // 2. Create the aggregation pipelines. Start by tagging the keys.
         ArrayList<LinkedHashMap> aggregations = (ArrayList<LinkedHashMap>)appConfig.get("agg");
         // TODO: These can be statically allocated for better startup performance.
         Map<String, PCollection> taggedPreAggregations = new HashMap<>();
@@ -79,7 +80,7 @@ public class MetricsAggregator {
             taggedPreAggregations.put(aggName, taggedKeys);
         }
 
-        // Window the result aggregations.
+        // 3. Window the result aggregations.
         Map<String, PCollection> windowedAggregations = new HashMap<>();
         for (Map.Entry<String, PCollection> taggedAggregation : taggedPreAggregations.entrySet())
         {
@@ -87,7 +88,7 @@ public class MetricsAggregator {
             windowedAggregations.put(taggedAggregation.getKey(), windowedAggregation);
         }
 
-        // Perform final aggregation.
+        // 4. Perform final aggregation (sum, count, or average).
         Map<String, PCollection> finalAggregations = new HashMap<>();
         for (LinkedHashMap agg : aggregations) {
             PCollection<KV<String, Long>> result;
@@ -109,7 +110,7 @@ public class MetricsAggregator {
             }
             finalAggregations.put(aggName, result);
         }
-        // Send to InfluxDB.
+        // 5. Send to InfluxDB.
         Map<String, Object> influxDbConfig = (Map<String, Object>) appConfig.get("influxdb");
         Map<String, PCollection> outputMappedAggregations = new HashMap<>();
         for (Map.Entry<String, PCollection> finalAggregation : finalAggregations.entrySet()) {

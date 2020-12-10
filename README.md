@@ -7,7 +7,7 @@
 
 `wip-connect` - An attempt to port the project to use Kafka Connect. Very broken. May require more 3rd party tools (schema registry).
 
-`wip-stash` - An attempt to modify as little as possible of the original project. Currently, has schema issues with Kafka.
+`wip-stash` - An attempt to modify as little as possible of the original project. Currently, has serialization issues with Kafka.
 
 ## Why Apache Beam+Flink?
 
@@ -16,10 +16,11 @@ Apache Beam+Flink has several advantages:
 - The 2020 big data community reccomends Flink or Storm over raw Kafka approaches to stream data. (Beam+Flink also replaces traditional Apache spark for stream/ML).
 - Several sources *claim* an 80-93% performance increase over Kafka Connect API in aggregation tests with bounded datasets (as of April 2020).
 - Theoretically infinitely scalable independent of Kafka configuration (also fluid enough to allow for auto-scaling).
-- Simple implementation in under 140 LLOC (XX% reduction).
+- Simple implementation in under 140 LLOC (86% reduction).
 - Good documentation, and easy to understand SDK (DSL written specifically for streaming workloads).
-- Minimal overhead from added abstraction layers (Approximately 1 GB per instance running in Direct runner mode).
-- Processing is done within the Flink cluster, reducing the number of round-trips between Kafka and the application.
+- Minimal overhead from added abstraction layers (Approximately 1 GB of RAM per instance running in Direct runner mode).
+- Processing is done within the Flink cluster, reducing the number of round-trips between Kafka instances and the application.
+- Flink cluster performs aggregation actions, reducing CPU and memory load on Kafka instances.
 - Unit/Integration testing is much easier with mockable sources/sinks.
 
 Known drawbacks:
